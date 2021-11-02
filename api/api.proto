@@ -17,7 +17,7 @@ service UserService {
             body: "*"
         };
     }
-    rpc FindUser (FindUserRequest) returns (FindUserResponse){
+    rpc FindUser (FindUserRequest) returns (stream FindUserResponse){
         option (google.api.http) = {
             post: "/find"
             body: "*"

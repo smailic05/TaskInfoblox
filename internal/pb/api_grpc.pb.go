@@ -20,7 +20,7 @@ const _ = grpc.SupportPackageIsVersion7
 type UserServiceClient interface {
 	AddUser(ctx context.Context, in *AddUserRequest, opts ...grpc.CallOption) (*AddUserResponse, error)
 	DeleteUser(ctx context.Context, in *DeleteUserRequest, opts ...grpc.CallOption) (*DeleteUserResponse, error)
-	FindUser(ctx context.Context, in *FindUserRequest, opts ...grpc.CallOption) (*FindUserResponse, error)
+	FindUser(ctx context.Context, in *FindUserRequest, opts ...grpc.CallOption) (UserService_FindUserClient, error)
 }
 
 type userServiceClient struct {
@@ -49,13 +49,36 @@ func (c *userServiceClient) DeleteUser(ctx context.Context, in *DeleteUserReques
 	return out, nil
 }
 
-func (c *userServiceClient) FindUser(ctx context.Context, in *FindUserRequest, opts ...grpc.CallOption) (*FindUserResponse, error) {
-	out := new(FindUserResponse)
-	err := c.cc.Invoke(ctx, "/pb.UserService/FindUser", in, out, opts...)
+func (c *userServiceClient) FindUser(ctx context.Context, in *FindUserRequest, opts ...grpc.CallOption) (UserService_FindUserClient, error) {
+	stream, err := c.cc.NewStream(ctx, &UserService_ServiceDesc.Streams[0], "/pb.UserService/FindUser", opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &userServiceFindUserClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type UserService_FindUserClient interface {
+	Recv() (*FindUserResponse, error)
+	grpc.ClientStream
+}
+
+type userServiceFindUserClient struct {
+	grpc.ClientStream
+}
+
+func (x *userServiceFindUserClient) Recv() (*FindUserResponse, error) {
+	m := new(FindUserResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 // UserServiceServer is the server API for UserService service.
@@ -64,7 +87,7 @@ func (c *userServiceClient) FindUser(ctx context.Context, in *FindUserRequest, o
 type UserServiceServer interface {
 	AddUser(context.Context, *AddUserRequest) (*AddUserResponse, error)
 	DeleteUser(context.Context, *DeleteUserRequest) (*DeleteUserResponse, error)
-	FindUser(context.Context, *FindUserRequest) (*FindUserResponse, error)
+	FindUser(*FindUserRequest, UserService_FindUserServer) error
 	mustEmbedUnimplementedUserServiceServer()
 }
 
@@ -78,8 +101,8 @@ func (UnimplementedUserServiceServer) AddUser(context.Context, *AddUserRequest) 
 func (UnimplementedUserServiceServer) DeleteUser(context.Context, *DeleteUserRequest) (*DeleteUserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteUser not implemented")
 }
-func (UnimplementedUserServiceServer) FindUser(context.Context, *FindUserRequest) (*FindUserResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method FindUser not implemented")
+func (UnimplementedUserServiceServer) FindUser(*FindUserRequest, UserService_FindUserServer) error {
+	return status.Errorf(codes.Unimplemented, "method FindUser not implemented")
 }
 func (UnimplementedUserServiceServer) mustEmbedUnimplementedUserServiceServer() {}
 
@@ -130,22 +153,25 @@ func _UserService_DeleteUser_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
-func _UserService_FindUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(FindUserRequest)
-	if err := dec(in); err != nil {
-		return nil, err
+func _UserService_FindUser_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(FindUserRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
 	}
-	if interceptor == nil {
-		return srv.(UserServiceServer).FindUser(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/pb.UserService/FindUser",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UserServiceServer).FindUser(ctx, req.(*FindUserRequest))
-	}
-	return interceptor(ctx, in, info, handler)
+	return srv.(UserServiceServer).FindUser(m, &userServiceFindUserServer{stream})
+}
+
+type UserService_FindUserServer interface {
+	Send(*FindUserResponse) error
+	grpc.ServerStream
+}
+
+type userServiceFindUserServer struct {
+	grpc.ServerStream
+}
+
+func (x *userServiceFindUserServer) Send(m *FindUserResponse) error {
+	return x.ServerStream.SendMsg(m)
 }
 
 // UserService_ServiceDesc is the grpc.ServiceDesc for UserService service.
@@ -163,11 +189,13 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "DeleteUser",
 			Handler:    _UserService_DeleteUser_Handler,
 		},
+	},
+	Streams: []grpc.StreamDesc{
 		{
-			MethodName: "FindUser",
-			Handler:    _UserService_FindUser_Handler,
+			StreamName:    "FindUser",
+			Handler:       _UserService_FindUser_Handler,
+			ServerStreams: true,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
 	Metadata: "api.proto",
 }

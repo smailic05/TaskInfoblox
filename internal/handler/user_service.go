@@ -39,28 +39,64 @@ func (s *UserService) AddUser(ctx context.Context, addUser *pb.AddUserRequest) (
 }
 
 func (s *UserService) DeleteUser(ctx context.Context, deleteUser *pb.DeleteUserRequest) (*pb.DeleteUserResponse, error) {
-	for key, value := range s.Users {
-		if value.Username == deleteUser.Username {
-			s.Users = remove(s.Users, key)
-			return &pb.DeleteUserResponse{Response: "Deleted"}, nil
-		}
-	}
-	return &pb.DeleteUserResponse{Response: "The user does not exist"}, nil
-}
-func (s *UserService) FindUser(ctx context.Context, findUser *pb.FindUserRequest) (*pb.FindUserResponse, error) {
-	g, err := glob.Compile(findUser.Username)
+	name, err := glob.Compile(deleteUser.Username)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "Error")
 	}
-	for _, value := range s.Users {
-		if g.Match(value.Username) {
-			return &pb.FindUserResponse{
-				Username: value.Username,
-				Address:  value.Address,
-				Phone:    value.Phone}, nil
+	address, err := glob.Compile(deleteUser.Address)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Error")
+	}
+	phone, err := glob.Compile(deleteUser.Phone)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Error")
+	}
+
+	count := 0
+	for key := 0; key < len(s.Users); key++ {
+		value := s.Users[key]
+		if name.Match(value.Username) && address.Match(value.Address) && phone.Match(value.Phone) {
+			s.Users = remove(s.Users, key)
+			count++
+			key--
 		}
 	}
-	return nil, status.Errorf(codes.InvalidArgument, "The user does not exist")
+	if count == 0 {
+		return &pb.DeleteUserResponse{Response: "The user does not exist"}, nil
+	}
+	return &pb.DeleteUserResponse{Response: "Deleted"}, nil
+}
+
+func (s *UserService) FindUser(findUser *pb.FindUserRequest, srv pb.UserService_FindUserServer) error {
+	name, err := glob.Compile(findUser.Username)
+	if err != nil {
+		return status.Errorf(codes.InvalidArgument, "Error")
+	}
+	address, err := glob.Compile(findUser.Address)
+	if err != nil {
+		return status.Errorf(codes.InvalidArgument, "Error")
+	}
+	phone, err := glob.Compile(findUser.Phone)
+	if err != nil {
+		return status.Errorf(codes.InvalidArgument, "Error")
+	}
+	count := 0
+	for _, value := range s.Users {
+		if name.Match(value.Username) && address.Match(value.Address) && phone.Match(value.Phone) {
+			count++
+			err := srv.Send(&pb.FindUserResponse{
+				Username: value.Username,
+				Address:  value.Address,
+				Phone:    value.Phone})
+			if err != nil {
+				return err
+			}
+		}
+	}
+	if count == 0 {
+		return status.Errorf(codes.InvalidArgument, "The user does not exist")
+	}
+	return nil
 }
 
 func remove(s []User, i int) []User {
