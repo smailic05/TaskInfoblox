@@ -22,11 +22,11 @@ type User struct {
 
 type UserService struct {
 	pb.UnimplementedUserServiceServer
-	Users []User
+	UserSlice []User
 }
 
 func New() *UserService {
-	return &UserService{Users: make([]User, 0)}
+	return &UserService{UserSlice: make([]User, 0)}
 }
 
 func (s *UserService) AddUser(ctx context.Context, addUser *pb.AddUserRequest) (*pb.AddUserResponse, error) {
@@ -34,7 +34,7 @@ func (s *UserService) AddUser(ctx context.Context, addUser *pb.AddUserRequest) (
 		Address:  addUser.Address,
 		Username: addUser.Username,
 		Phone:    addUser.Phone}
-	s.Users = append(s.Users, user)
+	s.UserSlice = append(s.UserSlice, user)
 	return &pb.AddUserResponse{Response: "Success"}, nil
 }
 
@@ -53,10 +53,10 @@ func (s *UserService) DeleteUser(ctx context.Context, deleteUser *pb.DeleteUserR
 	}
 
 	count := 0
-	for key := 0; key < len(s.Users); key++ {
-		value := s.Users[key]
+	for key := 0; key < len(s.UserSlice); key++ {
+		value := s.UserSlice[key]
 		if name.Match(value.Username) && address.Match(value.Address) && phone.Match(value.Phone) {
-			s.Users = remove(s.Users, key)
+			s.UserSlice = remove(s.UserSlice, key)
 			count++
 			key--
 		}
@@ -81,7 +81,7 @@ func (s *UserService) FindUser(findUser *pb.FindUserRequest, srv pb.UserService_
 		return status.Errorf(codes.InvalidArgument, "Error")
 	}
 	count := 0
-	for _, value := range s.Users {
+	for _, value := range s.UserSlice {
 		if name.Match(value.Username) && address.Match(value.Address) && phone.Match(value.Phone) {
 			count++
 			err := srv.Send(&pb.FindUserResponse{
