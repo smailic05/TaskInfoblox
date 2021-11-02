@@ -10,10 +10,6 @@ import (
 	"github.com/smailic05/TaskInfoblox/internal/pb"
 )
 
-const (
-	AddUserPath = "/add"
-)
-
 type User struct {
 	Address  string
 	Username string
