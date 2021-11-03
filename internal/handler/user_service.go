@@ -2,12 +2,20 @@ package handler
 
 import (
 	"context"
+	"sync"
 
 	"github.com/gobwas/glob"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"github.com/smailic05/TaskInfoblox/internal/pb"
+)
+
+
+const(
+	ErrUserNotExist = "The user does not exist"
+	Success = "Success"
+	Deleted = "Deleted"
 )
 
 type User struct {
@@ -19,6 +27,7 @@ type User struct {
 type UserService struct {
 	pb.UnimplementedUserServiceServer
 	UserSlice []User
+	mtx sync.Mutex //TODO RWMutex add
 }
 
 func New() *UserService {
@@ -30,51 +39,55 @@ func (s *UserService) AddUser(ctx context.Context, addUser *pb.AddUserRequest) (
 		Address:  addUser.Address,
 		Username: addUser.Username,
 		Phone:    addUser.Phone}
+	s.mtx.Lock()
 	s.UserSlice = append(s.UserSlice, user)
-	return &pb.AddUserResponse{Response: "Success"}, nil
+	s.mtx.Unlock()
+	return &pb.AddUserResponse{Response: Success}, nil
 }
 
 func (s *UserService) DeleteUser(ctx context.Context, deleteUser *pb.DeleteUserRequest) (*pb.DeleteUserResponse, error) {
 	name, err := glob.Compile(deleteUser.Username)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "Error")
+		return nil, status.Errorf(codes.InvalidArgument, "%s: when parsing username",err.Error())
 	}
 	address, err := glob.Compile(deleteUser.Address)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "Error")
+		return nil, status.Errorf(codes.InvalidArgument, "%s: when parsing address",err.Error())
 	}
 	phone, err := glob.Compile(deleteUser.Phone)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "Error")
+		return nil, status.Errorf(codes.InvalidArgument, "%s: when parsing phone",err.Error())
 	}
 
 	count := 0
 	for key := 0; key < len(s.UserSlice); key++ {
 		value := s.UserSlice[key]
 		if name.Match(value.Username) && address.Match(value.Address) && phone.Match(value.Phone) {
+			s.mtx.Lock()
 			s.UserSlice = remove(s.UserSlice, key)
+			s.mtx.Unlock()
 			count++
 			key--
 		}
 	}
 	if count == 0 {
-		return &pb.DeleteUserResponse{Response: "The user does not exist"}, nil
+		return &pb.DeleteUserResponse{Response: ErrUserNotExist}, nil
 	}
-	return &pb.DeleteUserResponse{Response: "Deleted"}, nil
+	return &pb.DeleteUserResponse{Response: Deleted}, nil
 }
 
 func (s *UserService) FindUser(findUser *pb.FindUserRequest, srv pb.UserService_FindUserServer) error {
 	name, err := glob.Compile(findUser.Username)
 	if err != nil {
-		return status.Errorf(codes.InvalidArgument, "Error")
+		return status.Errorf(codes.InvalidArgument, "%s: when parsing username",err.Error())
 	}
 	address, err := glob.Compile(findUser.Address)
 	if err != nil {
-		return status.Errorf(codes.InvalidArgument, "Error")
+		return status.Errorf(codes.InvalidArgument, "%s: when parsing address",err.Error())
 	}
 	phone, err := glob.Compile(findUser.Phone)
 	if err != nil {
-		return status.Errorf(codes.InvalidArgument, "Error")
+		return status.Errorf(codes.InvalidArgument, "%s: when parsing phone",err.Error())
 	}
 	count := 0
 	for _, value := range s.UserSlice {
@@ -90,7 +103,7 @@ func (s *UserService) FindUser(findUser *pb.FindUserRequest, srv pb.UserService_
 		}
 	}
 	if count == 0 {
-		return status.Errorf(codes.InvalidArgument, "The user does not exist")
+		return status.Errorf(codes.InvalidArgument, ErrUserNotExist)
 	}
 	return nil
 }
