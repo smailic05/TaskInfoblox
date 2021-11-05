@@ -27,7 +27,7 @@ type User struct {
 type UserService struct {
 	pb.UnimplementedUserServiceServer
 	UserSlice []User
-	mtx       sync.Mutex
+	mtx       sync.RWMutex
 }
 
 func New() *UserService {
@@ -93,8 +93,8 @@ func (s *UserService) FindUser(findUser *pb.FindUserRequest, srv pb.UserService_
 		return status.Errorf(codes.InvalidArgument, "%s: when parsing phone", err.Error())
 	}
 	count := 0
-	s.mtx.Lock()
-	defer s.mtx.Unlock()
+	s.mtx.RLock()
+	defer s.mtx.RUnlock()
 	for _, value := range s.UserSlice {
 		if name.Match(value.Username) && address.Match(value.Address) && phone.Match(value.Phone) {
 			count++
@@ -129,8 +129,8 @@ func (s *UserService) UpdateUser(ctx context.Context, updateUser *pb.UpdateUserR
 }
 
 func (s *UserService) ListUser(list *pb.ListUserRequest, srv pb.UserService_ListUserServer) error {
-	s.mtx.Lock()
-	defer s.mtx.Unlock()
+	s.mtx.RLock()
+	defer s.mtx.RUnlock()
 	for _, value := range s.UserSlice {
 		err := srv.Send(&pb.ListUserResponse{
 			Username: value.Username,

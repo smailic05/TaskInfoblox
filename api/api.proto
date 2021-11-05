@@ -23,6 +23,17 @@ service UserService {
             body: "*"
         };
     }
+    rpc UpdateUser (UpdateUserRequest) returns (UpdateUserResponse){
+        option (google.api.http) = {
+            post: "/update"
+            body: "*"
+        };
+    }
+    rpc ListUser (ListUserRequest) returns (stream ListUserResponse){
+        option (google.api.http) = {
+            get: "/list"
+        };
+    }
 }
 
 message AddUserRequest {
@@ -52,6 +63,29 @@ message FindUserRequest {
 }
 
 message FindUserResponse {
+    string username = 1;
+    string address = 2;
+    string phone = 3;
+}
+
+message UpdateUserRequest {
+    string oldUsername = 1;
+    string oldAddress = 2;
+    string oldPhone = 3;
+    string newUsername = 4;
+    string newAddress = 5;
+    string newPhone = 6;
+}
+
+message UpdateUserResponse {
+    string response = 1;
+}
+
+message ListUserRequest {
+
+}
+
+message ListUserResponse {
     string username = 1;
     string address = 2;
     string phone = 3;
