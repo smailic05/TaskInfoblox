@@ -40,6 +40,7 @@ func (s *UserService) AddUser(ctx context.Context, addUser *pb.AddUserRequest) (
 		Phone:    addUser.Phone}
 	s.mtx.Lock()
 	if findExist(addUser, s.UserSlice) {
+		s.mtx.Unlock()
 		return nil, status.Errorf(codes.InvalidArgument, "Error, user already exists")
 	}
 	s.UserSlice = append(s.UserSlice, user)
@@ -101,6 +102,7 @@ func (s *UserService) FindUser(findUser *pb.FindUserRequest, srv pb.UserService_
 				Address:  value.Address,
 				Phone:    value.Phone})
 			if err != nil {
+				s.mtx.Unlock()
 				return err
 			}
 		}
