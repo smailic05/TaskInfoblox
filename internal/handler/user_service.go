@@ -13,6 +13,7 @@ import (
 
 const (
 	ErrUserNotExist = "The user does not exist"
+	ErrUserExist    = "Error, user already exists"
 	Success         = "Success"
 	Deleted         = "Deleted"
 )
@@ -41,7 +42,7 @@ func (s *UserService) AddUser(ctx context.Context, addUser *pb.AddUserRequest) (
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
 	if findExist(addUser, s.UserSlice) {
-		return nil, status.Errorf(codes.InvalidArgument, "Error, user already exists")
+		return nil, status.Errorf(codes.InvalidArgument, ErrUserExist)
 	}
 	s.UserSlice = append(s.UserSlice, user)
 	return &pb.AddUserResponse{Response: Success}, nil
@@ -73,7 +74,7 @@ func (s *UserService) DeleteUser(ctx context.Context, deleteUser *pb.DeleteUserR
 	}
 	s.mtx.Unlock()
 	if count == 0 {
-		return nil, status.Errorf(codes.InvalidArgument, "Error, user already exists")
+		return nil, status.Errorf(codes.InvalidArgument, ErrUserNotExist)
 	}
 	return &pb.DeleteUserResponse{Response: Deleted}, nil
 }
