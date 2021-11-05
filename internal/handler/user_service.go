@@ -103,12 +103,42 @@ func (s *UserService) FindUser(findUser *pb.FindUserRequest, srv pb.UserService_
 				Address:  value.Address,
 				Phone:    value.Phone})
 			if err != nil {
-				return err
+				return status.Errorf(codes.InvalidArgument, "%s: when sending response", err.Error())
 			}
 		}
 	}
 	if count == 0 {
 		return status.Errorf(codes.InvalidArgument, ErrUserNotExist)
+	}
+	return nil
+}
+
+func (s *UserService) UpdateUser(ctx context.Context, updateUser *pb.UpdateUserRequest) (*pb.UpdateUserResponse, error) {
+	s.mtx.Lock()
+	defer s.mtx.Unlock()
+	for key, value := range s.UserSlice {
+		if updateUser.GetOldAddress() == value.Address && updateUser.GetOldPhone() == value.Phone && updateUser.GetOldUsername() == value.Username {
+			s.UserSlice[key] = User{
+				Address:  updateUser.GetNewAddress(),
+				Username: updateUser.GetNewUsername(),
+				Phone:    updateUser.GetNewPhone()}
+			return &pb.UpdateUserResponse{Response: Success}, nil
+		}
+	}
+	return nil, status.Errorf(codes.InvalidArgument, ErrUserNotExist)
+}
+
+func (s *UserService) ListUser(list *pb.ListUserRequest, srv pb.UserService_ListUserServer) error {
+	s.mtx.Lock()
+	defer s.mtx.Unlock()
+	for _, value := range s.UserSlice {
+		err := srv.Send(&pb.ListUserResponse{
+			Username: value.Username,
+			Address:  value.Address,
+			Phone:    value.Phone})
+		if err != nil {
+			return status.Errorf(codes.InvalidArgument, "%s: when sending response", err.Error())
+		}
 	}
 	return nil
 }
