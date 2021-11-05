@@ -73,7 +73,7 @@ func (s *UserService) DeleteUser(ctx context.Context, deleteUser *pb.DeleteUserR
 	}
 	s.mtx.Unlock()
 	if count == 0 {
-		return &pb.DeleteUserResponse{Response: ErrUserNotExist}, nil
+		return nil, status.Errorf(codes.InvalidArgument, "Error, user already exists")
 	}
 	return &pb.DeleteUserResponse{Response: Deleted}, nil
 }
