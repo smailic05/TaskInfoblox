@@ -26,7 +26,7 @@ type User struct {
 type UserService struct {
 	pb.UnimplementedUserServiceServer
 	UserSlice []User
-	mtx       sync.Mutex 
+	mtx       sync.Mutex
 }
 
 func New() *UserService {
@@ -39,12 +39,11 @@ func (s *UserService) AddUser(ctx context.Context, addUser *pb.AddUserRequest) (
 		Username: addUser.Username,
 		Phone:    addUser.Phone}
 	s.mtx.Lock()
+	defer s.mtx.Unlock()
 	if findExist(addUser, s.UserSlice) {
-		s.mtx.Unlock()
 		return nil, status.Errorf(codes.InvalidArgument, "Error, user already exists")
 	}
 	s.UserSlice = append(s.UserSlice, user)
-	s.mtx.Unlock()
 	return &pb.AddUserResponse{Response: Success}, nil
 }
 
@@ -94,6 +93,7 @@ func (s *UserService) FindUser(findUser *pb.FindUserRequest, srv pb.UserService_
 	}
 	count := 0
 	s.mtx.Lock()
+	defer s.mtx.Unlock()
 	for _, value := range s.UserSlice {
 		if name.Match(value.Username) && address.Match(value.Address) && phone.Match(value.Phone) {
 			count++
@@ -102,12 +102,10 @@ func (s *UserService) FindUser(findUser *pb.FindUserRequest, srv pb.UserService_
 				Address:  value.Address,
 				Phone:    value.Phone})
 			if err != nil {
-				s.mtx.Unlock()
 				return err
 			}
 		}
 	}
-	s.mtx.Unlock()
 	if count == 0 {
 		return status.Errorf(codes.InvalidArgument, ErrUserNotExist)
 	}
