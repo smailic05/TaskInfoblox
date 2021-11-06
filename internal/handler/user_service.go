@@ -24,6 +24,12 @@ type User struct {
 	Phone    string
 }
 
+type Compiled struct {
+	Address  glob.Glob
+	Username glob.Glob
+	Phone    glob.Glob
+}
+
 type UserService struct {
 	pb.UnimplementedUserServiceServer
 	UserSlice []User
@@ -49,24 +55,16 @@ func (s *UserService) AddUser(ctx context.Context, addUser *pb.AddUserRequest) (
 }
 
 func (s *UserService) DeleteUser(ctx context.Context, deleteUser *pb.DeleteUserRequest) (*pb.DeleteUserResponse, error) {
-	name, err := glob.Compile(deleteUser.Username)
+	compiled, err := compileRequest(deleteUser.Username, deleteUser.Address, deleteUser.Phone)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "%s: when parsing username", err.Error())
+		return nil, err
 	}
-	address, err := glob.Compile(deleteUser.Address)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "%s: when parsing address", err.Error())
-	}
-	phone, err := glob.Compile(deleteUser.Phone)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "%s: when parsing phone", err.Error())
-	}
-
+	//maybe inheritance
 	count := 0
 	s.mtx.Lock()
 	for key := 0; key < len(s.UserSlice); key++ {
 		value := s.UserSlice[key]
-		if name.Match(value.Username) && address.Match(value.Address) && phone.Match(value.Phone) {
+		if compiled.Username.Match(value.Username) && compiled.Address.Match(value.Address) && compiled.Phone.Match(value.Phone) {
 			s.UserSlice = remove(s.UserSlice, key)
 			count++
 			key--
@@ -80,23 +78,15 @@ func (s *UserService) DeleteUser(ctx context.Context, deleteUser *pb.DeleteUserR
 }
 
 func (s *UserService) FindUser(findUser *pb.FindUserRequest, srv pb.UserService_FindUserServer) error {
-	name, err := glob.Compile(findUser.Username)
+	compiled, err := compileRequest(findUser.Username, findUser.Address, findUser.Phone)
 	if err != nil {
-		return status.Errorf(codes.InvalidArgument, "%s: when parsing username", err.Error())
-	}
-	address, err := glob.Compile(findUser.Address)
-	if err != nil {
-		return status.Errorf(codes.InvalidArgument, "%s: when parsing address", err.Error())
-	}
-	phone, err := glob.Compile(findUser.Phone)
-	if err != nil {
-		return status.Errorf(codes.InvalidArgument, "%s: when parsing phone", err.Error())
+		return err
 	}
 	count := 0
 	s.mtx.RLock()
 	defer s.mtx.RUnlock()
 	for _, value := range s.UserSlice {
-		if name.Match(value.Username) && address.Match(value.Address) && phone.Match(value.Phone) {
+		if compiled.Username.Match(value.Username) && compiled.Address.Match(value.Address) && compiled.Phone.Match(value.Phone) {
 			count++
 			err := srv.Send(&pb.FindUserResponse{
 				Username: value.Username,
@@ -155,4 +145,29 @@ func findExist(addUser *pb.AddUserRequest, user []User) bool {
 		}
 	}
 	return false
+}
+
+func compileRequest(username, address, phone string) (*Compiled, error) {
+	if username == "" {
+		username = "*"
+	}
+	nameCompiled, err := glob.Compile(username)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "%s: when parsing username", err.Error())
+	}
+	if address == "" {
+		address = "*"
+	}
+	addressCompiled, err := glob.Compile(address)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "%s: when parsing address", err.Error())
+	}
+	if phone == "" {
+		phone = "*"
+	}
+	phoneCompiled, err := glob.Compile(phone)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "%s: when parsing phone", err.Error())
+	}
+	return &Compiled{Username: nameCompiled, Address: addressCompiled, Phone: phoneCompiled}, nil
 }
