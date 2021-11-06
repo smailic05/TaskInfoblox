@@ -1,0 +1,92 @@
+syntax = "proto3";
+package pb;
+option go_package = "github.com/smailic05/TaskInfoblox/internal/pb";
+
+import "google/api/annotations.proto";
+
+service UserService {
+    rpc AddUser (AddUserRequest) returns (AddUserResponse) {
+        option (google.api.http) = {
+            post: "/add"
+            body: "*"
+        };
+    }
+    rpc DeleteUser (DeleteUserRequest) returns (DeleteUserResponse){
+        option (google.api.http) = {
+            post: "/delete"
+            body: "*"
+        };
+    }
+    rpc FindUser (FindUserRequest) returns (stream FindUserResponse){
+        option (google.api.http) = {
+            post: "/find"
+            body: "*"
+        };
+    }
+    rpc UpdateUser (UpdateUserRequest) returns (UpdateUserResponse){
+        option (google.api.http) = {
+            post: "/update"
+            body: "*"
+        };
+    }
+    rpc ListUser (ListUserRequest) returns (stream ListUserResponse){
+        option (google.api.http) = {
+            get: "/list"
+        };
+    }
+}
+
+message AddUserRequest {
+    string username = 1;
+    string address = 2;
+    string phone = 3;
+}
+
+message AddUserResponse {
+    string response = 1;
+}
+
+message DeleteUserRequest {
+    string username = 1;
+    string address = 2;
+    string phone = 3;
+}
+
+message DeleteUserResponse {
+    string response = 1;
+}
+
+message FindUserRequest {
+    string username = 1;
+    string address = 2;
+    string phone = 3;
+}
+
+message FindUserResponse {
+    string username = 1;
+    string address = 2;
+    string phone = 3;
+}
+
+message UpdateUserRequest {
+    string oldUsername = 1;
+    string oldAddress = 2;
+    string oldPhone = 3;
+    string newUsername = 4;
+    string newAddress = 5;
+    string newPhone = 6;
+}
+
+message UpdateUserResponse {
+    string response = 1;
+}
+
+message ListUserRequest {
+
+}
+
+message ListUserResponse {
+    string username = 1;
+    string address = 2;
+    string phone = 3;
+}
