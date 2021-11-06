@@ -59,7 +59,6 @@ func (s *UserService) DeleteUser(ctx context.Context, deleteUser *pb.DeleteUserR
 	if err != nil {
 		return nil, err
 	}
-	//maybe inheritance
 	count := 0
 	s.mtx.Lock()
 	for key := 0; key < len(s.UserSlice); key++ {
