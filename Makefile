@@ -30,3 +30,7 @@ run-db:
 .PHONY: gen-mocks
 gen-mocks:
 	@docker run -v `pwd`:/src -w /src vektra/mockery:v2.7 --case snake --dir internal --output internal/mock --outpkg mock --all
+
+.PHONY: helm-install
+helm-install:
+	@helm install postgresql-test01 bitnami/postgresql --set global.postgresql.postgresqlUsername=postgres --set global.postgresql.postgresqlPassword=postgres --set global.postgresql.postgresqlDatabase=backend --set global.postgresql.servicePort=5432
