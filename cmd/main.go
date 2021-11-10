@@ -25,7 +25,11 @@ import (
 
 func main() {
 	logger := zerolog.New(os.Stdout).With().Timestamp().Logger()
-	dsn := "host=localhost user=postgres password=postgres dbname=backend port=5432 sslmode=disable"
+	cfg, err := config.New()
+	if err != nil {
+		logger.Fatal().Err(err).Msg("Configuration error")
+	}
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=5432 sslmode=disable", cfg.Host, cfg.User, cfg.Password, cfg.Dbname)
 	database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Database connection error")
@@ -35,10 +39,6 @@ func main() {
 		logger.Panic().Err(err).Msg("Failed to migrate models")
 	}
 	repoDB := db.NewDB(database)
-	cfg, err := config.New()
-	if err != nil {
-		logger.Fatal().Err(err).Msg("Configuration error")
-	}
 	userHandler := service.New(repoDB)
 	grpcServer := grpc.NewServer()
 
