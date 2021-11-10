@@ -40,3 +40,4 @@ spec:
   selector:
     app: second-task
   type: LoadBalancer
+  
