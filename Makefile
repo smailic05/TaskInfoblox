@@ -34,4 +34,3 @@ gen-mocks:
 .PHONY: helm-install
 helm-install:
 	@helm install postgresql-test01 bitnami/postgresql --set global.postgresql.postgresqlUsername=postgres --set global.postgresql.postgresqlPassword=postgres --set global.postgresql.postgresqlDatabase=backend --set global.postgresql.servicePort=5432 --set persistence.existingClaim=postgresql-pv-claim --set volumePermissions.enabled=true
-	
