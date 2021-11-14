@@ -65,8 +65,12 @@ func (suite *serviceTestSuite) TestAddUser() {
 	suite.Equal(r.GetResponse(), Success)
 }
 
-func TestAddUserErrorExist(t *testing.T) {
-	//TODO
+func (suite *serviceTestSuite) TestAddUserErrorExist() {
+	addUserRequest := &pb.AddUserRequest{Username: testValue, Address: testValue, Phone: testValue}
+	suite.repoMock.On("LoadOne", user).Once().Return(user, nil)
+	r, err := suite.service.AddUser(context.Background(), addUserRequest)
+	suite.Error(err)
+	suite.Nil(r)
 }
 
 func (suite *serviceTestSuite) TestDeleteUser() {
