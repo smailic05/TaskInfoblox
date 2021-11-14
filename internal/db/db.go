@@ -15,41 +15,26 @@ func NewDB(db *gorm.DB) *DB {
 
 func (db *DB) Load(user model.User) ([]model.User, error) {
 	users := make([]model.User, 0)
-	result := db.Where("username LIKE ? AND address LIKE ? AND phone LIKE ?", user.Username, user.Address, user.Phone).Find(&users)
-	if result.Error != nil {
-		return users, result.Error
-	}
-	return users, nil
+	err := db.Where("username LIKE ? AND address LIKE ? AND phone LIKE ?", user.Username, user.Address, user.Phone).Find(&users).Error
+	return users, err
 }
 
 func (db *DB) LoadOne(user model.User) (model.User, error) {
-	result := db.Where(user).First(&user)
-	if result.Error != nil {
-		return user, result.Error
-	}
-	return user, nil
+	err := db.Where(user).First(&user).Error
+	return user, err
 }
 
 func (db *DB) Store(user model.User) error {
-	result := db.Create(&user)
-	if result.Error != nil {
-		return result.Error
-	}
-	return nil
+	err := db.Create(&user).Error
+	return err
 }
 
 func (db *DB) Update(user model.User) error {
 	err := db.Save(&user).Error
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func (db *DB) DeleteUser(user model.User) error {
 	err := db.Where(user).Delete(&user).Error
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
