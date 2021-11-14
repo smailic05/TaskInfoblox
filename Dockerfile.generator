@@ -10,4 +10,4 @@ RUN go get google.golang.org/protobuf/cmd/protoc-gen-go@v1.27.1 \
     github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway
 
 RUN curl -o /usr/local/include/google/api/annotations.proto --create-dirs https://raw.githubusercontent.com/googleapis/googleapis/master/google/api/annotations.proto && \
-    curl -o /usr/local/include/google/api/http.proto --create-dirs https://raw.githubusercontent.com/googleapis/googleapis/master/google/api/http.proto
+    curl -o /usr/local/include/google/api/http.proto --create-dirs https://raw.githubusercontent.com/googleapis/googleapis/master/google/api/http.proto  

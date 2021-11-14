@@ -13,10 +13,14 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 
 	"github.com/smailic05/TaskInfoblox/internal/config"
-	"github.com/smailic05/TaskInfoblox/internal/handler"
+	"github.com/smailic05/TaskInfoblox/internal/db"
+	"github.com/smailic05/TaskInfoblox/internal/model"
 	"github.com/smailic05/TaskInfoblox/internal/pb"
+	"github.com/smailic05/TaskInfoblox/internal/service"
 )
 
 func main() {
@@ -27,7 +31,18 @@ func main() {
 		logger.Fatal().Err(err).Msg("Configuration error")
 	}
 
-	userHandler := handler.New()
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=5432 sslmode=disable", cfg.Host, cfg.User, cfg.Password, cfg.Dbname)
+	database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	if err != nil {
+		logger.Fatal().Err(err).Msg("Database connection error")
+	}
+	err = database.AutoMigrate(&model.User{})
+	if err != nil {
+		logger.Panic().Err(err).Msg("Failed to migrate models")
+	}
+	repoDB := db.NewDB(database)
+	userHandler := service.New(repoDB)
+
 	grpcServer := grpc.NewServer()
 
 	pb.RegisterUserServiceServer(grpcServer, userHandler)

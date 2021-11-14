@@ -13,8 +13,7 @@ service UserService {
     }
     rpc DeleteUser (DeleteUserRequest) returns (DeleteUserResponse){
         option (google.api.http) = {
-            post: "/delete"
-            body: "*"
+            delete: "/delete/{username}/{address}/{phone}"
         };
     }
     rpc FindUser (FindUserRequest) returns (stream FindUserResponse){
@@ -25,7 +24,7 @@ service UserService {
     }
     rpc UpdateUser (UpdateUserRequest) returns (UpdateUserResponse){
         option (google.api.http) = {
-            post: "/update"
+            put: "/update"
             body: "*"
         };
     }
@@ -53,7 +52,6 @@ message DeleteUserRequest {
 }
 
 message DeleteUserResponse {
-    string response = 1;
 }
 
 message FindUserRequest {

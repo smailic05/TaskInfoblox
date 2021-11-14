@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: second-task
+spec:
+  selector:
+    matchLabels:
+      app: second-task
+  template:
+    metadata:
+      labels:
+        app: second-task
+    spec:
+      containers:
+      - name: second-task
+        image: murad0660/second-task:2
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 8080
+        env:
+          - name: HOST
+            valueFrom:
+              configMapKeyRef:
+                name:  my-configmap
+                key:  url-database
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: second-task-service
+spec:
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080
+    nodePort: 30004
+  selector:
+    app: second-task
+  type: LoadBalancer
+  
